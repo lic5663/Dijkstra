@@ -3,21 +3,23 @@
 #include <vector>
 #include <queue>		// 우선 순위 queue 사용시 힙과 유사한 방식으로 구동하기 때문에 힙 대신 사용 가능
 #include <cstring>		
-#include <string>
 #define NAME_MAX 100
 #define CITY_MAX 100
 
 using namespace std;
+int INF = 100000000;
 
-// 도시 정보 저장 클래스
+//--------------------------- 도시 정보 저장 클래스----------------------------
 class city
 {
 private:
+
+
+public:
 	char * city_name;	// 도시 이름
 	int xpos, ypos;		// 도시 좌표
 	int num;			// 도시 번호
 
-public:
 	city()
 	{
 		city_name = NULL;
@@ -52,7 +54,7 @@ public:
 
 
 //------------------------------ 도시 정보 파일 읽기-----------------------------------------
-int ReadCityFile(city * citys)
+int ReadCityFile(city * cities)
 {
 	char cityName[NAME_MAX];				// 도시 이름
 	int xpos, ypos;							// 도시 좌표
@@ -68,7 +70,7 @@ int ReadCityFile(city * citys)
 		fin >> dumy;
 		fin >> ypos;
 
-		citys[count].SetCityInfo(cityName, xpos, ypos, count);
+		cities[count].SetCityInfo(cityName, xpos, ypos, count);
 		count++;
 	}
 	fin.close();
@@ -76,30 +78,43 @@ int ReadCityFile(city * citys)
 	return count;
 }
 
+//----------------------------- 도시 이름 비교해서 도시 번호 반환---------------------------
+int TransNum(city * cities, int count, char * name)
+{
+	for (int i = 0; i < count; i++)
+	{
+		if (strcmp(cities[i].city_name, name) == 0)
+			return i;
+	}
+}
+
 //------------------------------ 도시 간선 파일 읽기-----------------------------------------
-void ReadEdgeFile(city * citys, int * d, vector<pair<int, int>> * a)
+void ReadEdgeFile(city * cities, int count , int * d, vector<pair<int, int>> * a)
 {
 	char cityName[NAME_MAX];				
 	char cityName2[NAME_MAX];
 	int distance;							// 도시간 거리
-
+	int index = 0;
+	int city1, city2;						// 도시 번호 저장 변수
 
 	ifstream fin;
-	fin.open("Test.txt");
+	fin.open("cityEdge.txt");
 	while (!fin.eof())
 	{
 		fin >> cityName;
 		fin >> cityName2;
 		fin >> distance;
-		cout << cityName << " " << cityName2 << " " << distance << endl;
+
+		// 도시명을 비교하여 도시 번호 반환
+		city1 = TransNum(cities, count, cityName);
+		city2 = TransNum(cities, count, cityName2);
+
+		// 간선 추가
+		a[city1].push_back(make_pair(city2, distance));
+		a[city2].push_back(make_pair(city1, distance));
 	}
 	fin.close();
 }
-
-
-int number = 6;
-int INF = 100000000;
-
 
 
 
@@ -136,30 +151,59 @@ void dijkstra(int start, int * d, vector<pair<int,int>> * a)
 	}
 }
 
-
-
-
 int main(void)
 {
 	int count = 0;							// 도시 갯수 카운트
-	city citys [CITY_MAX];					// 도시 객체 배열
-
-
-	count = ReadCityFile(citys);			// 도시 정보 파일을 읽고 도시 갯수 반환, 도시 정보를 citys에 저장
+	city cities [CITY_MAX];					// 도시 객체 배열
+	
+	count = ReadCityFile(cities);			// 도시 정보 파일을 읽고 도시 갯수 반환, 도시 정보를 citys에 저장
 
 	for (int i = 0; i < count; i++)
-		citys[i].ShowCityData();
+		cities[i].ShowCityData();
 
-	//ReadEdgeFile();
+	vector<pair<int, int>> Edge [CITY_MAX];	// 간선 정보 저장 벡터 city1.(city2 , dist)
+	int * dist = new int[count];			// 노드간 최소거리 저장 배열
+
+	// 최소거리 초기화
+	for (int i = 0; i < count; i++)
+	{
+		dist[i] = INF;
+	}
+
+	// 도시간 간선 정보 획득
+	ReadEdgeFile(cities, count, dist, Edge);
+
+	char start[NAME_MAX];
+	char end[NAME_MAX];
+	cout << "출발 지점과 종료 지점을 입력해주세요." << endl;
+	cin >> start >> end;
+	cout << start << " " << end << endl;
+
+	int start_int, end_int;						// 출발지점 도착지점 int값 변환값 저장 변수
+	
+	start_int = TransNum(cities, count, start);
+	end_int = TransNum(cities, count, end);
+
+	cout << start_int << " " << end_int << endl;
+
+	// 다키스트라 알고리즘 구동
+	dijkstra(start_int, dist, Edge);
+
+	// 시작지점으로부터의 각 노드 최단거리 출력
+	for (int i = 0; i < count; i++)
+		cout << dist[i] << " ";
+	cout << endl;
+
+	// 최종 출력
+	cout << "최단 거리는 " << dist[end_int] << "입니다." << endl;
 
 
+
+	/*
+
+	int number = 6;
 	vector<pair<int, int>> a[7];		// 간선 정보
 	int d[7];							// 최소 비용
-
-	vector<pair<int, int>> Edge [CITY_MAX];
-	int * arr;
-
-
 
 	// 모두 연결되지 않은 상태로 초기화
 	for (int i = 0; i <= number; i++)
@@ -196,7 +240,10 @@ int main(void)
 	dijkstra(1,d,a);
 
 	for (int i = 1; i <= number; i++)
-		cout << d[i] << " ";
+	cout << dist[i] << " ";
 
-	cout << endl;
+	*/
+
+	
+	
 }
